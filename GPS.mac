@@ -1,0 +1,23 @@
+
+
+/run/initialize
+/control/verbose 0
+/tracking/verbose 0
+/event/verbose 0
+/gps/particle proton
+/gps/position 0 22.99 -70.0
+##/gps/direction 0 -sin(1.178097) -cos(1.178097)
+/gps/direction 0 0 1.0
+
+##/gps/ang/type iso
+##/gps/ang/mintheta 1.245256014
+##/gps/ang/maxtheta 2.526672298
+##/gps/ang/minphi	-0.6218242878
+##/gps/ang/maxphi	0.6218242878
+##/gps/ene/mono 3.5*cos(0.984*theta) MeV
+/gps/ene/mono 3.5 MeV
+/run/beamOn 100000000
+
+
+
+
