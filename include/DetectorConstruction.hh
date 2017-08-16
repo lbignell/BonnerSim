@@ -8,7 +8,7 @@ class G4VPhysicalVolume;
 class G4LogicalVolume;
 class SensD;
 class SensDTarget;
-
+class DetectorConstructionMessenger;
 /// Detector construction class to define materials and geometry.
 
 class DetectorConstruction : public G4VUserDetectorConstruction
@@ -16,16 +16,16 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   public:
     DetectorConstruction();
     virtual ~DetectorConstruction();
-
-  public:
     virtual G4VPhysicalVolume* Construct();
     virtual void ConstructSDandField();               
+    void SetHDPEthickness_in(G4double);
+    void UpdateGeometry();
   private:
     void DefineMaterials();
     G4bool  fCheckOverlaps;
     G4String absoSDname;
-    G4String absoSDTargetname;
-
+    G4double HDPEthickness_in;
+    DetectorConstructionMessenger* DetMess;
 };
 
 #endif

@@ -22,19 +22,6 @@ RunAction::RunAction()
   analysisManager->SetVerboseLevel(1); 
   analysisManager->SetFileName("CLYC_data"); 
   
-  // Book histograms, ntuple, EXAMPLE CODE COMMENTED OUT BELOW:
-  /* 
-  
-  // Creating 1D histograms 
-  analysisManager->CreateH1("Chamber1","Drift Chamber 1 # Hits", 50, 0., 50); // h1 Id = 0 
-  analysisManager->CreateH1("Chamber2","Drift Chamber 2 # Hits", 50, 0., 50); // h1 Id = 1 
-  
-  // Creating 2D histograms 
-  analysisManager->CreateH2("Chamber1 XY","Drift Chamber 1 X vs Y",50, -1000., 1000, 50, -300., 300.); // h2 Id = 0 
-  analysisManage->CreateH2("Chamber2 XY","Drift Chamber 2 X vs Y",50, -1500., 1500, 50, -300., 300.); // h2 Id = 1 
-  */
-
-
   // Creating ntuple here
   //
   //analysisManager->SetNtupleMerging(true);
@@ -62,32 +49,7 @@ RunAction::RunAction()
   analysisManager->CreateNtupleIColumn("stepNum");//19
   analysisManager->CreateNtupleSColumn("creatorProc");//20 
   analysisManager->CreateNtupleIColumn("trackID");//21
-  analysisManager->FinishNtuple(); //Do not forget this line! 
-
-// second ntuple (id = 1) for Target sensitive detector
-  analysisManager->CreateNtuple("Target", "TargetHits"); 
-  analysisManager->CreateNtupleDColumn("edepTarget"); // column Id = 0 
-  analysisManager->CreateNtupleSColumn("procnameTarget"); // column Id = 1
-  analysisManager->CreateNtupleDColumn("KinEnTarget"); // column Id = 2 
-  analysisManager->CreateNtupleDColumn("vertex_xTarget"); // column Id = 3 
-  analysisManager->CreateNtupleDColumn("vertex_yTarget"); // column Id = 4 
-  analysisManager->CreateNtupleDColumn("vertex_zTarget"); // column Id = 5
-  analysisManager->CreateNtupleSColumn("particleTarget");//6
-  analysisManager->CreateNtupleDColumn("vertex_pxTarget");//7
-  analysisManager->CreateNtupleDColumn("vertex_pyTarget");//8
-  analysisManager->CreateNtupleDColumn("vertex_pzTarget");//9
-  analysisManager->CreateNtupleDColumn("xTarget");//10
-  analysisManager->CreateNtupleDColumn("yTarget");//11
-  analysisManager->CreateNtupleDColumn("zTarget");//12
-  analysisManager->CreateNtupleDColumn("pxTarget");//13
-  analysisManager->CreateNtupleDColumn("pyTarget");//14
-  analysisManager->CreateNtupleDColumn("pzTarget");//15
-  analysisManager->CreateNtupleIColumn("evtTarget");//16
-  analysisManager->CreateNtupleDColumn("edep_evtTarget");//17
-  analysisManager->CreateNtupleDColumn("weightTarget"); //18
-  analysisManager->CreateNtupleIColumn("stepNumTarget");//19
-  analysisManager->CreateNtupleSColumn("creatorProcTarget");//20 
-  analysisManager->CreateNtupleIColumn("trackIDTarget");//21
+  analysisManager->CreateNtupleDColumn("vertex_KinEn");//22
   analysisManager->FinishNtuple(); //Do not forget this line! 
 
 }

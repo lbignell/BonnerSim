@@ -68,9 +68,10 @@ void EventAction::EndOfEventAction(const G4Event* evt )
           am->FillNtupleIColumn(0, 16, evtnum);
           am->FillNtupleDColumn(0, 17, edep_tot);
           am->FillNtupleDColumn(0, 18, ahit->Getweight());
-	  am->FillNtupleIColumn(0, 19, ahit->GetStepNumber());
+	      am->FillNtupleIColumn(0, 19, ahit->GetStepNumber());
           am->FillNtupleSColumn(0, 20, ahit->GetCreatorProcess());
-	  am->FillNtupleIColumn(0, 21, ahit->GetTrackID());
+     	  am->FillNtupleIColumn(0, 21, ahit->GetTrackID());
+          am->FillNtupleDColumn(0, 22, ahit->GetVertexKinEn());
           am->AddNtupleRow(0);
       }
     }

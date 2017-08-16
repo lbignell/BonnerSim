@@ -26,11 +26,14 @@
 #include "GB01BOptrChangeCrossSection.hh"
 #include "GB02BOptrMultiParticleForceCollision.hh"
 #include "G4LogicalVolumeStore.hh"
+#include "G4RunManager.hh"
+#include "DetectorConstructionMessenger.hh"
 
 DetectorConstruction::DetectorConstruction()
 : G4VUserDetectorConstruction(),
-  fCheckOverlaps(true), absoSDname("Clyc/ClycSD"), absoSDTargetname("TargetSD")
+  fCheckOverlaps(true), absoSDname("Clyc/ClycSD"), HDPEthickness_in(4)
 {
+  DetMess = new DetectorConstructionMessenger(this);
   DefineMaterials();
 }
 DetectorConstruction::~DetectorConstruction()
@@ -38,6 +41,14 @@ DetectorConstruction::~DetectorConstruction()
 
 void DetectorConstruction::DefineMaterials()
 {}
+
+void DetectorConstruction::SetHDPEthickness_in(G4double val)
+{HDPEthickness_in = val;}
+
+void DetectorConstruction::UpdateGeometry(){
+    //Copying the SABREMC approach.
+    G4RunManager::GetRunManager()->DefineWorldVolume(Construct());
+}
 
 void DetectorConstruction::ConstructSDandField(){
     SensD* threadSD = new SensD ( absoSDname );
@@ -74,7 +85,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
   // Parameters
   G4NistManager* nist = G4NistManager::Instance();
-  G4Material* default_mat = nist->FindOrBuildMaterial("G4_AIR");
+  G4Material* air = nist->FindOrBuildMaterial("G4_AIR");
       
   // World
   G4double world_sizeXY = 70*cm;
@@ -84,7 +95,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
        world_sizeXY, world_sizeXY, world_sizeZ); //its size   
   G4LogicalVolume* logicWorld =                         
     new G4LogicalVolume(solidWorld,          //its solid
-                        default_mat,         //its material
+                        air,         //its material
                         "World");            //its name                             
   G4VPhysicalVolume* physWorld = 
     new G4PVPlacement(0,                     //no rotation
@@ -130,15 +141,39 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
   // place clyc in world
   // Rotation matrix
-  G4double rotation_angle = 67.5;
+  G4double rotation_angle = 0;//67.5;
   // Define straight line distance between front of CLYC and middle of world
-  G4double CLYCdistance = 21.6;
+  // (cm).
+  G4double CLYCdistance = (129.9+25./2)/10;
   // Defne straight line distance between front of HDPE and middle of world
-  G4double HDPEdistance = 6.0;
+  // (cm).
+  G4double HDPEdistance = (1.8 + 25./2)/10;
   //Total HDPE moderator thickness, in inches.
-  G4double HDPEthickness_in = 4; 
+  //G4double HDPEthickness_in = 4; 
  
-  G4ThreeVector position1 = G4ThreeVector(-(CLYCdistance+1.27+0.3)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+1.27+0.3)*(cos(rotation_angle*deg)))*cm);
+  G4Tubs* SrcHolder = new G4Tubs("SrcHolder", 0., 25*mm, 12.5*mm, 0, twopi);
+  G4LogicalVolume* SrcHolder_log = new G4LogicalVolume(SrcHolder, HDPE,
+                                                       "SrcHolder_log");
+  G4ThreeVector srcpos = G4ThreeVector(0, 229.19*mm, 0);
+  G4RotationMatrix srcrot = G4RotationMatrix();
+  G4Transform3D srctransform = G4Transform3D(srcrot, srcpos);
+  new G4PVPlacement(srctransform, SrcHolder_log, "SrcHolder_phys", logicWorld, 
+                    false, 0, fCheckOverlaps); 
+
+  G4Tubs* srcvoid = new G4Tubs("srcvoid", 0., 12.5*mm, 3*mm, 0, twopi);
+  G4LogicalVolume* srcvoid_log = new G4LogicalVolume(srcvoid, air,
+    "srcvoid_log");
+  G4Transform3D nulltransform = G4Transform3D();
+  new G4PVPlacement(nulltransform, srcvoid_log, "srcvoid_phys", SrcHolder_log,
+                    false, 0, fCheckOverlaps);
+ 
+  //I won't bother with the Al source plate (transparent to neutrons).
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //Matt's Code.
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  G4ThreeVector position1 = G4ThreeVector(-(CLYCdistance+1.27+0.3)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+1.27+0.3)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm1  = G4RotationMatrix();
   rotm1.rotateY((180-rotation_angle)*deg); 
   rotm1.rotateX(0*deg); 
@@ -172,7 +207,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                         PointyBit_mat,         //its material
                         "PointyBit");        //its name
   // Rotation Matrix
-  G4ThreeVector position12 = G4ThreeVector(-(CLYCdistance+0.88)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+0.88)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position12 = G4ThreeVector(-(CLYCdistance+0.88)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+0.88)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm12  = G4RotationMatrix();
   rotm12.rotateY((180-rotation_angle)*deg); 
   rotm12.rotateX(0*deg); 
@@ -198,7 +233,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                         PBC_mat,         //its material
                         "PBCLV");        //its name
   // Rotation Matrix
-  G4ThreeVector position13 = G4ThreeVector(-(CLYCdistance+0.15)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+0.15)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position13 = G4ThreeVector(-(CLYCdistance+0.15)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+0.15)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm13  = G4RotationMatrix();
   rotm13.rotateY((180-rotation_angle)*deg); 
   rotm13.rotateX(0*deg); 
@@ -227,7 +262,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                         FCB_mat,         //its material
                         "FCB");        //its name
   // Rotation Matrix
-  G4ThreeVector position14 = G4ThreeVector(-(CLYCdistance+2.85-.545)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85-.545)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position14 = G4ThreeVector(-(CLYCdistance+2.85-.545)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85-.545)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm14  = G4RotationMatrix();
   rotm14.rotateY((180-rotation_angle)*deg); 
   rotm14.rotateX(0*deg); 
@@ -256,7 +291,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                         MBOC_mat,         //its material
                         "MBOC");        //its name  
   // Rotation Matrix
-  G4ThreeVector position15 = G4ThreeVector(-(CLYCdistance+2.85+4.865)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85+4.865)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position15 = G4ThreeVector(-(CLYCdistance+2.85+4.865)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+4.865)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm15  = G4RotationMatrix();
   rotm15.rotateY((180-rotation_angle)*deg); 
   rotm15.rotateX(0*deg); 
@@ -283,7 +318,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                         GlassPane_mat,         //its material
                         "GlassPane");        //its name  
   // Rotation Matrix
-  G4ThreeVector position16 = G4ThreeVector(-(CLYCdistance+2.85+0.1)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85+0.1)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position16 = G4ThreeVector(-(CLYCdistance+2.85+0.1)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+0.1)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm16  = G4RotationMatrix();
   rotm16.rotateY((180-rotation_angle)*deg); 
   rotm16.rotateX(0*deg); 
@@ -303,15 +338,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double EBOCI_radius = 0.0*cm;
   G4double EBOC_dZ = .385*cm; 
   
-  G4Material* EBOC_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
   G4Tubs* EBOC = 
     new G4Tubs("EBOC", EBOCI_radius, EBOCO_radius, EBOC_dZ, 0., twopi);
   G4LogicalVolume* logicEBOC =                         
     new G4LogicalVolume(EBOC,             //its solid
-                        EBOC_mat,         //its material
+                        HDPE,         //its material
                         "EBOC");        //its name  
   // Rotation Matrix
-  G4ThreeVector position17 = G4ThreeVector(-(CLYCdistance+2.85+10.5-.385)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85+10.5-.385)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position17 = G4ThreeVector(-(CLYCdistance+2.85+10.5-.385)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+10.5-.385)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm17  = G4RotationMatrix();
   rotm17.rotateY((180-rotation_angle)*deg); 
   rotm17.rotateX(0*deg); 
@@ -343,7 +377,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                         Vacuum,//VICC_mat,         //its material
                         "VICC");        //its name  
   // Rotation Matrix
-  G4ThreeVector position0 = G4ThreeVector(-(CLYCdistance+2.85+0.2+4.665)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85+0.2+4.665)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position0 = G4ThreeVector(-(CLYCdistance+2.85+0.2+4.665)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+0.2+4.665)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm0  = G4RotationMatrix();
   rotm0.rotateY((180-rotation_angle)*deg); 
   rotm0.rotateX(0*deg); 
@@ -370,7 +404,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                         SecondGlassPane_mat,         //its material
                         "SecondGlassPane");        //its name  
   // Rotation Matrix
-  G4ThreeVector position18 = G4ThreeVector(-(CLYCdistance+2.85+10.5-.77-0.1)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85+10.5-.77-0.1)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position18 = G4ThreeVector(-(CLYCdistance+2.85+10.5-.77-0.1)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+10.5-.77-0.1)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm18  = G4RotationMatrix();
   rotm18.rotateY((180-rotation_angle)*deg); 
   rotm18.rotateX(0*deg); 
@@ -392,15 +426,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double SCAEI_radius = 0.0*cm;
   G4double SCAE_dZ = 0.636*cm; 
   
-  G4Material* SCAE_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
   G4Tubs* SCAE = 
     new G4Tubs("SCAE", SCAEI_radius, SCAEO_radius, SCAE_dZ, 0., twopi);
   G4LogicalVolume* logicSCAE =                         
     new G4LogicalVolume(SCAE,             //its solid
-                        SCAE_mat,         //its material
+                        HDPE,         //its material
                         "SCAE");        //its name  
   // Rotation Matrix
-  G4ThreeVector position19 = G4ThreeVector(-(CLYCdistance+2.85+10.5+0.636)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85+10.5+0.636)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position19 = G4ThreeVector(-(CLYCdistance+2.85+10.5+0.636)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+10.5+0.636)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm19  = G4RotationMatrix();
   rotm19.rotateY((180-rotation_angle)*deg); 
   rotm19.rotateX(0*deg); 
@@ -420,15 +453,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double BCAEI_radius = 2.859*cm;
   G4double BCAE_dZ = 1.25*cm; 
   
-  G4Material* BCAE_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
   G4Tubs* BCAE = 
     new G4Tubs("BCAE", BCAEI_radius, BCAEO_radius, BCAE_dZ, 0., twopi);
   G4LogicalVolume* logicBCAE =                         
     new G4LogicalVolume(BCAE,             //its solid
-                        BCAE_mat,         //its material
+                        HDPE,         //its material
                         "BCAE");        //its name  
   // Rotation Matrix
-  G4ThreeVector position20 = G4ThreeVector(-(CLYCdistance+2.85+10.5+1.272+1.25)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85+10.5+1.272+1.25)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position20 = G4ThreeVector(-(CLYCdistance+2.85+10.5+1.272+1.25)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+10.5+1.272+1.25)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm20  = G4RotationMatrix();
   rotm20.rotateY((180-rotation_angle)*deg); 
   rotm20.rotateX(0*deg); 
@@ -447,15 +479,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double PEC_radius = 2.859*cm;
   G4double PEC_dZ = .175*cm; 
   
-  G4Material* PEC_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
   G4Tubs* PEC = 
     new G4Tubs("PEC", 0.0, PEC_radius, PEC_dZ, 0., twopi);
   G4LogicalVolume* logicPEC =                         
     new G4LogicalVolume(PEC,             //its solid
-                        PEC_mat,         //its material
+                        HDPE,         //its material
                         "PEC");        //its name  
   // Rotation Matrix
-  G4ThreeVector position21 = G4ThreeVector(-(CLYCdistance+2.85+10.5+1.272+2.5-.175)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85+10.5+1.272+2.5-.175)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position21 = G4ThreeVector(-(CLYCdistance+2.85+10.5+1.272+2.5-.175)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+10.5+1.272+2.5-.175)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm21  = G4RotationMatrix();
   rotm21.rotateY((180-rotation_angle)*deg); 
   rotm21.rotateX(0*deg); 
@@ -491,15 +522,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double MBBCI_radius = 3.167*cm;
   G4double MBBC_dZ = 1.03*cm; 
   
-  G4Material* MBBC_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
   G4Tubs* MBBC = 
     new G4Tubs("MBBC", MBBCI_radius, MBBCO_radius, MBBC_dZ, 0., twopi);
   G4LogicalVolume* logicMBBC =                         
     new G4LogicalVolume(MBBC,             //its solid
-                        MBBC_mat,         //its material
+                        HDPE,         //its material
                         "MBBC");        //its name  
   // Rotation Matrix
-  G4ThreeVector position23 = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85+1.61+1.61)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position23 = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+1.61+1.61)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm23  = G4RotationMatrix();
   rotm23.rotateY((180-rotation_angle)*deg); 
   rotm23.rotateX(0*deg); 
@@ -521,15 +551,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double FFFCI_radius = 3.167*cm;
   G4double FFFC_dZ = .29*cm; 
   
-  G4Material* FFFC_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
   G4Tubs* FFFC = 
     new G4Tubs("FFFC", FFFCI_radius, FFFCO_radius, FFFC_dZ, 0., twopi);
   G4LogicalVolume* logicFFFC =                         
     new G4LogicalVolume(FFFC,             //its solid
-                        FFFC_mat,         //its material
+                        HDPE,         //its material
                         "FFFC");        //its name  
   // Rotation Matrix
-  G4ThreeVector position24 = G4ThreeVector(-(CLYCdistance+2.85+1.61+.29)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85+1.61+.29)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position24 = G4ThreeVector(-(CLYCdistance+2.85+1.61+.29)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+1.61+.29)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm24 = G4RotationMatrix();
   rotm24.rotateY((180-rotation_angle)*deg); 
   rotm24.rotateX(0*deg); 
@@ -549,15 +578,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double BFFCI_radius = 3.167*cm;
   G4double BFFC_dZ = .29*cm; 
   
-  G4Material* BFFC_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
   G4Tubs* BFFC = 
     new G4Tubs("BFFC", BFFCI_radius, BFFCO_radius, BFFC_dZ, 0., twopi);
   G4LogicalVolume* logicBFFC =                         
     new G4LogicalVolume(BFFC,             //its solid
-                        BFFC_mat,         //its material
+                        HDPE,         //its material
                         "BFFC");        //its name  
   // Rotation Matrix
-  G4ThreeVector position25 = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61+1.32)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(CLYCdistance+2.85+1.61+1.61+1.32)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position25 = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61+1.32)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+1.61+1.61+1.32)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm25 = G4RotationMatrix();
   rotm25.rotateY((180-rotation_angle)*deg); 
   rotm25.rotateX(0*deg); 
@@ -588,7 +616,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
   //// Make pole and circle into union solid
   // Rotation matrix
-  G4ThreeVector positionMetalholderC = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61)*(sin(rotation_angle*deg))*cm,9.7*cm,(-27.4+(CLYCdistance+2.85+1.61+1.61)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector positionMetalholderC = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61)*(sin(rotation_angle*deg))*cm,9.7*cm,((CLYCdistance+2.85+1.61+1.61)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotmMetalholderC  = G4RotationMatrix();
   rotmMetalholderC.rotateY((180-rotation_angle)*deg); 
   rotmMetalholderC.rotateX(0*deg); 
@@ -614,64 +642,62 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                     fCheckOverlaps);         // checking overlaps 
 
 
-
-  ////// HDPE
-  //// Weird endy bit (WEB)
-  // Define Geometry
-  G4double WEB_radius = 3.99*cm;
-  G4double WEB_dZ = 0.15*cm; 
+  if(HDPEthickness_in>0){
+      ////// HDPE
+      //// Weird endy bit (WEB)
+      // Define Geometry
+      G4double WEB_radius = 3.99*cm;
+      G4double WEB_dZ = 0.15*cm; 
   
-  G4Material* WEB_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
-  G4Tubs* WEB = 
-    new G4Tubs("WEB", 0.0, WEB_radius, WEB_dZ, 0., twopi);
-  G4LogicalVolume* logicWEB =                         
-    new G4LogicalVolume(WEB,             //its solid
-                        WEB_mat,         //its material
-                        "WEB");        //its name  
-  // Rotation Matrix
-  G4ThreeVector position27 = G4ThreeVector(-(HDPEdistance+0.15)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(HDPEdistance+0.15)*(cos(rotation_angle*deg)))*cm);
-  G4RotationMatrix rotm27 = G4RotationMatrix();
-  rotm27.rotateY((180-rotation_angle)*deg); 
-  rotm27.rotateX(0*deg); 
-  rotm27.rotateZ(0*deg); 
-  G4Transform3D transform27 = G4Transform3D(rotm27, position27);  
-  // Place on world
-  new G4PVPlacement(transform27,                       //no rotation
-                    logicWEB,               //its logical volume
-                    "WEB",                  //its name
-                    logicWorld,              //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    fCheckOverlaps);         // checking overlaps 
-  //// Main cylinder of HDPE (MCOH)
-  // Define Geometry
-  G4double MCOH_radius = 3.12*cm;
-  G4double MCOH_dZ = ((HDPEthickness_in/2)*2.62-0.15);         //// Note: change 10.0 to the depth of the HDPE plug
+      G4Tubs* WEB = 
+        new G4Tubs("WEB", 0.0, WEB_radius, WEB_dZ, 0., twopi);
+      G4LogicalVolume* logicWEB =                         
+        new G4LogicalVolume(WEB,             //its solid
+                            HDPE,         //its material
+                            "WEB");        //its name  
+      // Rotation Matrix
+      G4ThreeVector position27 = G4ThreeVector(-(HDPEdistance+0.15)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.15)*(cos(rotation_angle*deg)))*cm);
+      G4RotationMatrix rotm27 = G4RotationMatrix();
+      rotm27.rotateY((180-rotation_angle)*deg); 
+      rotm27.rotateX(0*deg); 
+      rotm27.rotateZ(0*deg); 
+      G4Transform3D transform27 = G4Transform3D(rotm27, position27);  
+      // Place on world
+      new G4PVPlacement(transform27,                       //no rotation
+                        logicWEB,               //its logical volume
+                        "WEB",                  //its name
+                        logicWorld,              //its mother  volume
+                        false,                   //no boolean operation
+                        0,                       //copy number
+                        fCheckOverlaps);         // checking overlaps 
+      //// Main cylinder of HDPE (MCOH)
+      // Define Geometry
+      G4double MCOH_radius = 3.12*cm;
+      G4double MCOH_dZ = ((HDPEthickness_in/2)*2.62-0.15);         //// Note: change 10.0 to the depth of the HDPE plug
   
-  G4Material* MCOH_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
-  G4Tubs* MCOH = 
-    new G4Tubs("MCOH", 0.0, MCOH_radius, MCOH_dZ*cm, 0., twopi);
-  G4LogicalVolume* logicMCOH =                         
-    new G4LogicalVolume(MCOH,             //its solid
-                        MCOH_mat,         //its material
-                        "MCOH");        //its name  
-  // Rotation Matrix
-  G4ThreeVector position28 = G4ThreeVector(-(HDPEdistance+0.3+(MCOH_dZ))*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(HDPEdistance+0.3+(MCOH_dZ))*(cos(rotation_angle*deg)))*cm);
-  G4RotationMatrix rotm28 = G4RotationMatrix();
-  rotm28.rotateY((180-rotation_angle)*deg); 
-  rotm28.rotateX(0*deg); 
-  rotm28.rotateZ(0*deg); 
-  G4Transform3D transform28 = G4Transform3D(rotm28, position28);  
-  // Place on world
-  new G4PVPlacement(transform28,                       //no rotation
-                    logicMCOH,               //its logical volume
-                    "MCOH",                  //its name
-                    logicWorld,              //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    fCheckOverlaps);         // checking overlaps 
+      G4Tubs* MCOH = 
+        new G4Tubs("MCOH", 0.0, MCOH_radius, MCOH_dZ*cm, 0., twopi);
+      G4LogicalVolume* logicMCOH =                         
+        new G4LogicalVolume(MCOH,             //its solid
+                            HDPE,         //its material
+                            "MCOH");        //its name  
+      // Rotation Matrix
+      G4ThreeVector position28 = G4ThreeVector(-(HDPEdistance+0.3+(MCOH_dZ))*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+(MCOH_dZ))*(cos(rotation_angle*deg)))*cm);
+      G4RotationMatrix rotm28 = G4RotationMatrix();
+      rotm28.rotateY((180-rotation_angle)*deg); 
+      rotm28.rotateX(0*deg); 
+      rotm28.rotateZ(0*deg); 
+      G4Transform3D transform28 = G4Transform3D(rotm28, position28);  
+      // Place on world
+      new G4PVPlacement(transform28,                       //no rotation
+                        logicMCOH,               //its logical volume
+                        "MCOH",                  //its name
+                        logicWorld,              //its mother  volume
+                        false,                   //no boolean operation
+                        0,                       //copy number
+                        fCheckOverlaps);         // checking overlaps 
 
- 
+  }
 
   ////// HDPE Holder
   //// Big Metal Pole HDPE (BMPH)
@@ -679,7 +705,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double BMPH_width = 1.0*cm;
   G4double BMPH_height = 9.7*cm;
   G4double BMPH_depth = 1.0*cm;
-
   G4Material* BMPH_mat = nist->FindOrBuildMaterial("G4_Al");
   G4Box* BMPH = new G4Box("BMPH", BMPH_width, BMPH_height, BMPH_depth);  
   G4LogicalVolume* logicBMPH =                         
@@ -690,17 +715,15 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   // Define Geometry
   G4double MBBHO_radius = 3.42*cm;
   G4double MBBHI_radius = 3.12*cm;
-  G4double MBBH_dZ = 1.03*cm; 
-  
-  G4Material* MBBH_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
+  G4double MBBH_dZ = 1.03*cm;   
   G4Tubs* MBBH = 
     new G4Tubs("MBBH", MBBHI_radius, MBBHO_radius, MBBH_dZ, 0., twopi);
   G4LogicalVolume* logicMBBH =                         
     new G4LogicalVolume(MBBH,             //its solid
-                        MBBH_mat,         //its material
+                        HDPE,         //its material
                         "MBBH");        //its name  
   // Rotation Matrix
-  G4ThreeVector position30 = G4ThreeVector(-(HDPEdistance+0.3+1.03+.29*2)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(HDPEdistance+0.3+1.03+.29*2)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position30 = G4ThreeVector(-(HDPEdistance+0.3+1.03+.29*2)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+1.03+.29*2)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm30  = G4RotationMatrix();
   rotm30.rotateY((180-rotation_angle)*deg); 
   rotm30.rotateX(0*deg); 
@@ -721,15 +744,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double FFFHI_radius = 3.42*cm;             
   G4double FFFH_dZ = .29*cm; 
   
-  G4Material* FFFH_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
   G4Tubs* FFFH = 
     new G4Tubs("FFFH", FFFHI_radius, FFFHO_radius, FFFH_dZ, 0., twopi);
   G4LogicalVolume* logicFFFH =                         
     new G4LogicalVolume(FFFH,             //its solid
-                        FFFH_mat,         //its material
+                        HDPE,         //its material
                         "FFFH");        //its name  
   // Rotation Matrix
-  G4ThreeVector position31 = G4ThreeVector(-(HDPEdistance+0.3+.29)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(HDPEdistance+0.3+.29)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position31 = G4ThreeVector(-(HDPEdistance+0.3+.29)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+.29)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm31 = G4RotationMatrix();
   rotm31.rotateY((180-rotation_angle)*deg); 
   rotm31.rotateX(0*deg); 
@@ -749,15 +771,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double BFFHI_radius = 3.42*cm;
   G4double BFFH_dZ = .29*cm; 
   
-  G4Material* BFFH_mat = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
   G4Tubs* BFFH = 
     new G4Tubs("BFFH", BFFHI_radius, BFFHO_radius, BFFH_dZ, 0., twopi);
   G4LogicalVolume* logicBFFH =                         
     new G4LogicalVolume(BFFH,             //its solid
-                        BFFH_mat,         //its material
+                        HDPE,         //its material
                         "BFFH");        //its name  
   // Rotation Matrix
-  G4ThreeVector position32 = G4ThreeVector(-(HDPEdistance+0.3+1.03*2+.29*3)*(sin(rotation_angle*deg))*cm,229.19*mm,(-27.4+(HDPEdistance+0.3+1.03*2+.29*3)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector position32 = G4ThreeVector(-(HDPEdistance+0.3+1.03*2+.29*3)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+1.03*2+.29*3)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm32 = G4RotationMatrix();
   rotm32.rotateY((180-rotation_angle)*deg); 
   rotm32.rotateX(0*deg); 
@@ -787,7 +808,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
   //// Make pole and circle into union solid
   // Rotation matrix
-  G4ThreeVector positionMetalholderH = G4ThreeVector(-(HDPEdistance+0.3+1.03+.29*2)*(sin(rotation_angle*deg))*cm,9.7*cm,(-27.4+(HDPEdistance+0.3+1.03+.29*2)*(cos(rotation_angle*deg)))*cm);
+  G4ThreeVector positionMetalholderH = G4ThreeVector(-(HDPEdistance+0.3+1.03+.29*2)*(sin(rotation_angle*deg))*cm,9.7*cm,((HDPEdistance+0.3+1.03+.29*2)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotmMetalholderH  = G4RotationMatrix();
   rotmMetalholderH.rotateY((180-rotation_angle)*deg); 
   rotmMetalholderH.rotateX(0*deg); 

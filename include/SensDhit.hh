@@ -42,6 +42,7 @@ class SensDhit : public G4VHit
     G4int GetStepNumber() const;
     G4String GetCreatorProcess() const;
     G4int GetTrackID() const;
+    G4double GetVertexKinEn() const;
 
     void Setedep(G4double val){edep = val;};  
     void Setprocessname(G4String val){processname = val;};  
@@ -57,6 +58,7 @@ class SensDhit : public G4VHit
     void SetStepNumber(G4int val){stepnum = val;};
     void SetCreatorProcess(G4String val){creatorproc = val;};
     void SetTrackID(G4int val){trackID = val;};
+    void SetVertexKinEn(G4double val){vertKinEn = val;};
 
   private:
     G4double edep;        ///< Energy deposit in the sensitive volume
@@ -64,8 +66,6 @@ class SensDhit : public G4VHit
     G4String processname; 
     G4String particleDefinition; 
     G4double KinEn;
-    //G4ThreeVector primaryvertex;  
-    //G4ThreeVector primarymomentum; 
     G4ThreeVector vertexpos; 
     G4ThreeVector vertexmom;
     G4ThreeVector position; 
@@ -74,6 +74,7 @@ class SensDhit : public G4VHit
     G4int stepnum;
     G4String creatorproc;
     G4int trackID;
+    G4double vertKinEn;
 
 };
 
@@ -153,6 +154,9 @@ inline G4String SensDhit::GetCreatorProcess() const{
 }
 inline G4int SensDhit::GetTrackID() const{
   return trackID;
+}
+inline G4double SensDhit::GetVertexKinEn() const{
+  return vertKinEn;
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
