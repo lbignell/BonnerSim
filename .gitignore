@@ -1,6 +1,7 @@
 build/
 *~
 *.swp
+*.swo
 *.in
 *.out
 *.root

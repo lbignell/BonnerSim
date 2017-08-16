@@ -97,8 +97,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                       fCheckOverlaps);       // checking overlaps 
             
   // build clyc material
-  G4Element* caesium = nist->FindOrBuildElement("G4_Cs");
-    //new G4Element("Caesium", "Cs", 55, 132*g/mole);
+  G4Element* caesium = nist->FindOrBuildElement(55);
   G4Isotope* isoLi6 = 
     new G4Isotope("Li6", 3, 6, 6.015121*g/mole);
   G4Isotope* isoLi7 = 
@@ -107,10 +106,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4Element("enriched Li", "Li", 2);
   enrichedLi->AddIsotope(isoLi6, 95.*perCent);
   enrichedLi->AddIsotope(isoLi7, 05.*perCent);
-  G4Element* yttrium = nist->FindOrBuildElement("G4_Y");
-    //new G4Element("Yttrium", "Y", 39, 88.9*g/mole); 
-  G4Element* chlorine = nist->FindOrBuildElement("G4_Cl");
-    //new G4Element("Chlorine", "Cl", 17, 35.45*g/mole); 
+  G4Element* yttrium = nist->FindOrBuildElement(39);
+  G4Element* chlorine = nist->FindOrBuildElement(17);
   G4Material* Cs2LiYCl6 =
     new G4Material("CLYC", 3.31*g/cm3, 4);
   G4int number_of_atoms;
@@ -124,19 +121,12 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   // clyc
   G4double clyc_radius = 1.27*cm;
   G4double clyc_dZ = 1.27*cm;    
-  //G4Material* clyc_mat = nist->FindOrBuildMaterial("Cs2LiYCl6");
   G4Tubs* Clyc =
     new G4Tubs("Clyc", 0., clyc_radius, clyc_dZ, 0., twopi);
   G4LogicalVolume* logicClyc =                         
     new G4LogicalVolume(Clyc,        //its solid
                         Cs2LiYCl6,         //its material
                         "ClycLV");        //its name
-
-  /*DONE IN ConstructSDandField 
-  // Make ClYC into sensitive detector
-  SensD* absoSD;
-  absoSD = new SensD ( absoSDname );
-  logicClyc->SetSensitiveDetector(absoSD);*/
 
   // place clyc in world
   // Rotation matrix
