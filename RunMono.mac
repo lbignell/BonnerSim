@@ -1,0 +1,22 @@
+/run/initialize
+/control/verbose 0
+/tracking/verbose 0
+/event/verbose 0
+/gps/particle neutron
+/gps/position 0 229.19 0 mm
+/gps/ang/type iso
+##/gps/ang/mintheta 1.245256014
+##/gps/ang/maxtheta 2.526672298
+##/gps/ang/minphi	-0.6218242878
+##/gps/ang/maxphi	0.6218242878
+##/gps/ene/mono 3.5*cos(0.984*theta) MeV
+#/gps/ene/type Bbody
+#/gps/ene/temp 8234998558 #K, based on 0.71 MeV value in Terrell, Phys Rev, 1959
+#/gps/ene/min 1 eV
+#/gps/ene/max 100 MeV
+#/gps/ene/calculate
+#NEED TO WRITE A MACRO THAT WILL LOOP OVER ENERGIES AND HDPE THICKNESSES, SAVING
+#IN THE APPROPRIATE FILES.
+/control/alias nevts 100
+/control/foreach RunThickness.mac tHDPE "4 2 1 0"
+

@@ -1,0 +1,3 @@
+/gps/ene/mono {En} eV
+/analysis/setFileName Neuts{En}eV_HDPE{tHDPE}in_{nevts}events
+/run/beamOn {nevts}
