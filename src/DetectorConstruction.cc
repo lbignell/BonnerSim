@@ -154,25 +154,26 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double HDPEdistance = (1.8 + 25./2)/10;
   //Total HDPE moderator thickness, in inches.
   //G4double HDPEthickness_in = 4; 
- 
-  G4Tubs* SrcHolder = new G4Tubs("SrcHolder", 0., 25*mm, 12.5*mm, 0, twopi);
-  G4LogicalVolume* SrcHolder_log = new G4LogicalVolume(SrcHolder, HDPE,
-                                                       "SrcHolder_log");
-  G4ThreeVector srcpos = G4ThreeVector(0, 229.19*mm, 0);
-  G4RotationMatrix srcrot = G4RotationMatrix();
-  G4Transform3D srctransform = G4Transform3D(srcrot, srcpos);
-  new G4PVPlacement(srctransform, SrcHolder_log, "SrcHolder_phys", logicWorld, 
-                    false, 0, fCheckOverlaps); 
 
-  G4Tubs* srcvoid = new G4Tubs("srcvoid", 0., 12.5*mm, 3*mm, 0, twopi);
-  G4LogicalVolume* srcvoid_log = new G4LogicalVolume(srcvoid, air,
-    "srcvoid_log");
-  G4Transform3D nulltransform = G4Transform3D();
-  new G4PVPlacement(nulltransform, srcvoid_log, "srcvoid_phys", SrcHolder_log,
-                    false, 0, fCheckOverlaps);
- 
-  //I won't bother with the Al source plate (transparent to neutrons).
+  if(!sphere){
+    G4Tubs* SrcHolder = new G4Tubs("SrcHolder", 0., 25*mm, 12.5*mm, 0, twopi);
+    G4LogicalVolume* SrcHolder_log = new G4LogicalVolume(SrcHolder, HDPE,
+                                                         "SrcHolder_log");
+    G4ThreeVector srcpos = G4ThreeVector(0, 229.19*mm, 0);
+    G4RotationMatrix srcrot = G4RotationMatrix();
+    G4Transform3D srctransform = G4Transform3D(srcrot, srcpos);
+    new G4PVPlacement(srctransform, SrcHolder_log, "SrcHolder_phys", logicWorld, 
+                      false, 0, fCheckOverlaps); 
 
+    G4Tubs* srcvoid = new G4Tubs("srcvoid", 0., 12.5*mm, 3*mm, 0, twopi);
+    G4LogicalVolume* srcvoid_log = new G4LogicalVolume(srcvoid, air,
+      "srcvoid_log");
+    G4Transform3D nulltransform = G4Transform3D();
+    new G4PVPlacement(nulltransform, srcvoid_log, "srcvoid_phys", SrcHolder_log,
+                      false, 0, fCheckOverlaps);
+ 
+    //I won't bother with the Al source plate (transparent to neutrons).
+  }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //Matt's Code.
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -508,146 +509,146 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                     fCheckOverlaps);         // checking overlaps 
 
 
-  ////// CLYC Holder
-  //// Big Metal Pole ClYC (BMPC)
-  // Geometry
-  G4double BMPC_width = 1.0*cm;
-  G4double BMPC_height = 9.7*cm;
-  G4double BMPC_depth = 1.0*cm;
-
-  G4Material* BMPC_mat = nist->FindOrBuildMaterial("G4_Al");
-  G4Box* BMPC = new G4Box("BMPC", BMPC_width, BMPC_height, BMPC_depth);  
-  G4LogicalVolume* logicBMPC =                         
-    new G4LogicalVolume(BMPC,             //its solid
-                        BMPC_mat,         //its material
-                        "BMPCLV");        //its name
-  
-  //// Main Black Bit ClYC (MBBC)
-  // Define Geometry
-  G4double MBBCO_radius = 3.467*cm;
-  G4double MBBCI_radius = 3.167*cm;
-  G4double MBBC_dZ = 1.03*cm; 
-  
-  G4Tubs* MBBC = 
-    new G4Tubs("MBBC", MBBCI_radius, MBBCO_radius, MBBC_dZ, 0., twopi);
-  G4LogicalVolume* logicMBBC =                         
-    new G4LogicalVolume(MBBC,             //its solid
-                        HDPE,         //its material
-                        "MBBC");        //its name  
-  // Rotation Matrix
-  G4ThreeVector position23 = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+1.61+1.61)*(cos(rotation_angle*deg)))*cm);
-  G4RotationMatrix rotm23  = G4RotationMatrix();
-  rotm23.rotateY((180-rotation_angle)*deg); 
-  rotm23.rotateX(0*deg); 
-  rotm23.rotateZ(0*deg); 
-  G4Transform3D transform23 = G4Transform3D(rotm23, position23);  
-  // Place on world
-  new G4PVPlacement(transform23,                       //no rotation
-                    logicMBBC,               //its logical volume
-                    "MBBC",                  //its name
-                    logicWorld,              //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    fCheckOverlaps);         // checking overlaps 
-
-  //// Black overlap bit CLYC
-  /// Front fallange for CLYC (FFFC)
-  // Define Geometry
-  G4double FFFCO_radius = 4.047*cm;
-  G4double FFFCI_radius = 3.167*cm;
-  G4double FFFC_dZ = .29*cm; 
-  
-  G4Tubs* FFFC = 
-    new G4Tubs("FFFC", FFFCI_radius, FFFCO_radius, FFFC_dZ, 0., twopi);
-  G4LogicalVolume* logicFFFC =                         
-    new G4LogicalVolume(FFFC,             //its solid
-                        HDPE,         //its material
-                        "FFFC");        //its name  
-  // Rotation Matrix
-  G4ThreeVector position24 = G4ThreeVector(-(CLYCdistance+2.85+1.61+.29)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+1.61+.29)*(cos(rotation_angle*deg)))*cm);
-  G4RotationMatrix rotm24 = G4RotationMatrix();
-  rotm24.rotateY((180-rotation_angle)*deg); 
-  rotm24.rotateX(0*deg); 
-  rotm24.rotateZ(0*deg); 
-  G4Transform3D transform24 = G4Transform3D(rotm24, position24);  
-  // Place on world
-  new G4PVPlacement(transform24,                       //no rotation
-                    logicFFFC,               //its logical volume
-                    "FFFC",                  //its name
-                    logicWorld,              //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    fCheckOverlaps);         // checking overlaps 
- /// Back Fallange for CLYC (BFFC)
-  // Define Geometry
-  G4double BFFCO_radius = 4.047*cm;
-  G4double BFFCI_radius = 3.167*cm;
-  G4double BFFC_dZ = .29*cm; 
-  
-  G4Tubs* BFFC = 
-    new G4Tubs("BFFC", BFFCI_radius, BFFCO_radius, BFFC_dZ, 0., twopi);
-  G4LogicalVolume* logicBFFC =                         
-    new G4LogicalVolume(BFFC,             //its solid
-                        HDPE,         //its material
-                        "BFFC");        //its name  
-  // Rotation Matrix
-  G4ThreeVector position25 = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61+1.32)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+1.61+1.61+1.32)*(cos(rotation_angle*deg)))*cm);
-  G4RotationMatrix rotm25 = G4RotationMatrix();
-  rotm25.rotateY((180-rotation_angle)*deg); 
-  rotm25.rotateX(0*deg); 
-  rotm25.rotateZ(0*deg); 
-  G4Transform3D transform25 = G4Transform3D(rotm25, position25);  
-  // Place on world
-  new G4PVPlacement(transform25,                       //no rotation
-                    logicBFFC,               //its logical volume
-                    "BFFC",                  //its name
-                    logicWorld,              //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    fCheckOverlaps);         // checking overlaps 
-  //// Circular metal Bits CLYC (CMBC)
-  // Define Geometry
-  G4double CMBCO_radius = 4.157*cm;
-  G4double CMBCI_radius = 3.467*cm;
-  G4double CMBC_dZ = 1.0*cm; 
-  
-  G4Material* CMBC_mat = nist->FindOrBuildMaterial("G4_Al");
-  G4Tubs* CMBC = 
-    new G4Tubs("CMBC", CMBCI_radius, CMBCO_radius, CMBC_dZ, 0., twopi);
-  G4LogicalVolume* logicCMBC =                         
-    new G4LogicalVolume(CMBC,             //its solid
-                        CMBC_mat,         //its material
-                        "CMBC");        //its name  
-
-
-  //// Make pole and circle into union solid
-  // Rotation matrix
-  G4ThreeVector positionMetalholderC = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61)*(sin(rotation_angle*deg))*cm,9.7*cm,((CLYCdistance+2.85+1.61+1.61)*(cos(rotation_angle*deg)))*cm);
-  G4RotationMatrix rotmMetalholderC  = G4RotationMatrix();
-  rotmMetalholderC.rotateY((180-rotation_angle)*deg); 
-  rotmMetalholderC.rotateX(0*deg); 
-  rotmMetalholderC.rotateZ(0*deg); 
-  G4Transform3D transformMetalholderC = G4Transform3D(rotmMetalholderC, positionMetalholderC);  
-  // Build Metal holder
-  G4ThreeVector MetalholderCtrans = G4ThreeVector(0., 13.219*cm, 0.);
-  G4RotationMatrix* MetalholderCRot = new G4RotationMatrix;
-    MetalholderCRot->rotateY(0.);
-
-  G4UnionSolid* MetalholderC = 
-    new G4UnionSolid("MetalholderC", BMPC, CMBC,  MetalholderCRot, MetalholderCtrans);
-  G4LogicalVolume* logicMetalholderC =                         
-    new G4LogicalVolume(MetalholderC,             //its solid
-                        CMBC_mat,             //its material
-                        "MetalholderC");        //its name
-    new G4PVPlacement(transformMetalholderC,                     //no rotation
-                    logicMetalholderC,          //its logical volume
-                    "MetalholderC",             //its name
-                    logicWorld,              //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    fCheckOverlaps);         // checking overlaps 
-
   if(!sphere){
+    ////// CLYC Holder
+    //// Big Metal Pole ClYC (BMPC)
+    // Geometry
+    G4double BMPC_width = 1.0*cm;
+    G4double BMPC_height = 9.7*cm;
+    G4double BMPC_depth = 1.0*cm;
+
+    G4Material* BMPC_mat = nist->FindOrBuildMaterial("G4_Al");
+    G4Box* BMPC = new G4Box("BMPC", BMPC_width, BMPC_height, BMPC_depth);  
+    G4LogicalVolume* logicBMPC =                         
+      new G4LogicalVolume(BMPC,             //its solid
+                          BMPC_mat,         //its material
+                          "BMPCLV");        //its name
+    
+    //// Main Black Bit ClYC (MBBC)
+    // Define Geometry
+    G4double MBBCO_radius = 3.467*cm;
+    G4double MBBCI_radius = 3.167*cm;
+    G4double MBBC_dZ = 1.03*cm; 
+    
+    G4Tubs* MBBC = 
+      new G4Tubs("MBBC", MBBCI_radius, MBBCO_radius, MBBC_dZ, 0., twopi);
+    G4LogicalVolume* logicMBBC =                         
+      new G4LogicalVolume(MBBC,             //its solid
+                          HDPE,         //its material
+                          "MBBC");        //its name  
+    // Rotation Matrix
+    G4ThreeVector position23 = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+1.61+1.61)*(cos(rotation_angle*deg)))*cm);
+    G4RotationMatrix rotm23  = G4RotationMatrix();
+    rotm23.rotateY((180-rotation_angle)*deg); 
+    rotm23.rotateX(0*deg); 
+    rotm23.rotateZ(0*deg); 
+    G4Transform3D transform23 = G4Transform3D(rotm23, position23);  
+    // Place on world
+    new G4PVPlacement(transform23,                       //no rotation
+                      logicMBBC,               //its logical volume
+                      "MBBC",                  //its name
+                      logicWorld,              //its mother  volume
+                      false,                   //no boolean operation
+                      0,                       //copy number
+                      fCheckOverlaps);         // checking overlaps 
+
+    //// Black overlap bit CLYC
+    /// Front fallange for CLYC (FFFC)
+    // Define Geometry
+    G4double FFFCO_radius = 4.047*cm;
+    G4double FFFCI_radius = 3.167*cm;
+    G4double FFFC_dZ = .29*cm; 
+    
+    G4Tubs* FFFC = 
+      new G4Tubs("FFFC", FFFCI_radius, FFFCO_radius, FFFC_dZ, 0., twopi);
+    G4LogicalVolume* logicFFFC =                         
+      new G4LogicalVolume(FFFC,             //its solid
+                          HDPE,         //its material
+                          "FFFC");        //its name  
+    // Rotation Matrix
+    G4ThreeVector position24 = G4ThreeVector(-(CLYCdistance+2.85+1.61+.29)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+1.61+.29)*(cos(rotation_angle*deg)))*cm);
+    G4RotationMatrix rotm24 = G4RotationMatrix();
+    rotm24.rotateY((180-rotation_angle)*deg); 
+    rotm24.rotateX(0*deg); 
+    rotm24.rotateZ(0*deg); 
+    G4Transform3D transform24 = G4Transform3D(rotm24, position24);  
+    // Place on world
+    new G4PVPlacement(transform24,                       //no rotation
+                      logicFFFC,               //its logical volume
+                      "FFFC",                  //its name
+                      logicWorld,              //its mother  volume
+                      false,                   //no boolean operation
+                      0,                       //copy number
+                      fCheckOverlaps);         // checking overlaps 
+    // Back Fallange for CLYC (BFFC)
+    // Define Geometry
+    G4double BFFCO_radius = 4.047*cm;
+    G4double BFFCI_radius = 3.167*cm;
+    G4double BFFC_dZ = .29*cm; 
+    
+    G4Tubs* BFFC = 
+      new G4Tubs("BFFC", BFFCI_radius, BFFCO_radius, BFFC_dZ, 0., twopi);
+    G4LogicalVolume* logicBFFC =                         
+      new G4LogicalVolume(BFFC,             //its solid
+                          HDPE,         //its material
+                          "BFFC");        //its name  
+    // Rotation Matrix
+    G4ThreeVector position25 = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61+1.32)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+2.85+1.61+1.61+1.32)*(cos(rotation_angle*deg)))*cm);
+    G4RotationMatrix rotm25 = G4RotationMatrix();
+    rotm25.rotateY((180-rotation_angle)*deg); 
+    rotm25.rotateX(0*deg); 
+    rotm25.rotateZ(0*deg); 
+    G4Transform3D transform25 = G4Transform3D(rotm25, position25);  
+    // Place on world
+    new G4PVPlacement(transform25,                       //no rotation
+                      logicBFFC,               //its logical volume
+                      "BFFC",                  //its name
+                      logicWorld,              //its mother  volume
+                      false,                   //no boolean operation
+                      0,                       //copy number
+                      fCheckOverlaps);         // checking overlaps 
+    //// Circular metal Bits CLYC (CMBC)
+    // Define Geometry
+    G4double CMBCO_radius = 4.157*cm;
+    G4double CMBCI_radius = 3.467*cm;
+    G4double CMBC_dZ = 1.0*cm; 
+    
+    G4Material* CMBC_mat = nist->FindOrBuildMaterial("G4_Al");
+    G4Tubs* CMBC = 
+      new G4Tubs("CMBC", CMBCI_radius, CMBCO_radius, CMBC_dZ, 0., twopi);
+    G4LogicalVolume* logicCMBC =                         
+      new G4LogicalVolume(CMBC,             //its solid
+                          CMBC_mat,         //its material
+                          "CMBC");        //its name  
+
+
+    //// Make pole and circle into union solid
+    // Rotation matrix
+    G4ThreeVector positionMetalholderC = G4ThreeVector(-(CLYCdistance+2.85+1.61+1.61)*(sin(rotation_angle*deg))*cm,9.7*cm,((CLYCdistance+2.85+1.61+1.61)*(cos(rotation_angle*deg)))*cm);
+    G4RotationMatrix rotmMetalholderC  = G4RotationMatrix();
+    rotmMetalholderC.rotateY((180-rotation_angle)*deg); 
+    rotmMetalholderC.rotateX(0*deg); 
+    rotmMetalholderC.rotateZ(0*deg); 
+    G4Transform3D transformMetalholderC = G4Transform3D(rotmMetalholderC, positionMetalholderC);  
+    // Build Metal holder
+    G4ThreeVector MetalholderCtrans = G4ThreeVector(0., 13.219*cm, 0.);
+    G4RotationMatrix* MetalholderCRot = new G4RotationMatrix;
+      MetalholderCRot->rotateY(0.);
+
+    G4UnionSolid* MetalholderC = 
+      new G4UnionSolid("MetalholderC", BMPC, CMBC,  MetalholderCRot, MetalholderCtrans);
+    G4LogicalVolume* logicMetalholderC =                         
+      new G4LogicalVolume(MetalholderC,             //its solid
+                          CMBC_mat,             //its material
+                          "MetalholderC");        //its name
+      new G4PVPlacement(transformMetalholderC,                     //no rotation
+                      logicMetalholderC,          //its logical volume
+                      "MetalholderC",             //its name
+                      logicWorld,              //its mother  volume
+                      false,                   //no boolean operation
+                      0,                       //copy number
+                      fCheckOverlaps);         // checking overlaps 
+
   	if(HDPEthickness_in>0){
   	    ////// HDPE
   	    //// Weird endy bit (WEB)
@@ -842,7 +843,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 	//sphere geometry.
 	//Make radius = HDPEthickness_in
 	G4Sphere* SimpleSphere = new G4Sphere("SimpleSphere", 0, 
-				HDPEthickness_in, 0, twopi, 0, twopi);
+				HDPEthickness_in*2.54*cm, 0, twopi, 0, twopi);
 	//Subtract solid pointy bit. Since the sphere is centred on the CLYC,
 	//this doesn't need any rotation/translation.
 	G4SubtractionSolid* BS_m_PB = 
@@ -850,13 +851,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 	//Subtract the CLYC tube. This needs to be translated by the length of
 	//the 'pointy bit' (PBDepth).
 	G4Tubs* SubCyl = new G4Tubs("SubCyl", 0, MBOCO_radius, 
-				HDPEthickness_in, 0, twopi);
+				HDPEthickness_in*2.54*cm, 0, twopi);
 	G4SubtractionSolid* BonnerSphere =
 		new G4SubtractionSolid("BonnerSphere", BS_m_PB, SubCyl, 0,
-			G4ThreeVector(0, 0, -HDPEthickness_in - PBDepth*2));
+			G4ThreeVector(0, 0, -HDPEthickness_in*2.54*cm - PBDepth + 0.001*mm));
 
 	G4LogicalVolume* logicBonner = 
 		new G4LogicalVolume(BonnerSphere, HDPE, "Bonner_log");
+
 
 	new G4PVPlacement(transform12, logicBonner, "Bonner_phys", logicWorld,
 			false, 0, fCheckOverlaps);
