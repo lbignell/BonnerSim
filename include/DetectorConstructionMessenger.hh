@@ -10,6 +10,7 @@
 class G4UIdirectory;
 class G4UIcmdWithADouble;
 class G4UIcmdWithoutParameter;
+class G4UIcmdWithABool;
 class DetectorConstruction;
 //---------------------------------------------------------------------------//
 
@@ -38,5 +39,6 @@ private:
     G4UIdirectory               *fDetMessDir;
     G4UIcmdWithADouble          *fHDPECmd;
     G4UIcmdWithoutParameter     *fupdateCmd;
+    G4UIcmdWithABool		*fSphereCmd;
 };
 #endif

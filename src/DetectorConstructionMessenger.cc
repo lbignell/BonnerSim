@@ -1,6 +1,7 @@
 #include "globals.hh"
 #include "G4UIcmdWithoutParameter.hh"
 #include "G4UIcmdWithADouble.hh"
+#include "G4UIcmdWithABool.hh"
 #include "G4PhysicalVolumeStore.hh"
 
 #include "DetectorConstruction.hh"
@@ -21,6 +22,9 @@ DetectorConstructionMessenger::DetectorConstructionMessenger
     
     fupdateCmd = new G4UIcmdWithoutParameter("/DetectorMessenger/updateGeo", this);
     fupdateCmd->SetGuidance("Update detector geometry after settings");
+
+    fSphereCmd = new G4UIcmdWithABool("/DetectorMessenger/setSphere", this);
+    fSphereCmd->SetGuidance("Flag to set HDPE as sphere (otherwise cylinder)");
 }
 
 DetectorConstructionMessenger::~DetectorConstructionMessenger()
@@ -28,6 +32,7 @@ DetectorConstructionMessenger::~DetectorConstructionMessenger()
     delete fDetMessDir;
     delete fHDPECmd;
     delete fupdateCmd;
+    delete fSphereCmd;
 }
 
 //---------------------------------------------------------------------------//
@@ -43,4 +48,6 @@ void DetectorConstructionMessenger::SetNewValue(G4UIcommand *command,
       {
     	fDetectorPrimary->UpdateGeometry();
       }
+    else if(command == fSphereCmd)
+    {fDetectorPrimary->SetSphere(fSphereCmd->GetNewBoolValue(newValue));}
 }

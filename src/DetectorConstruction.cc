@@ -4,6 +4,7 @@
 #include "G4Tubs.hh"
 #include "G4Cons.hh"
 #include "G4Orb.hh"
+#include "G4Sphere.hh"
 #include "G4LogicalVolume.hh"
 #include "G4SubtractionSolid.hh"
 #include "G4IntersectionSolid.hh"
@@ -31,7 +32,8 @@
 
 DetectorConstruction::DetectorConstruction()
 : G4VUserDetectorConstruction(),
-  fCheckOverlaps(true), absoSDname("Clyc/ClycSD"), HDPEthickness_in(4)
+  fCheckOverlaps(true), absoSDname("Clyc/ClycSD"), HDPEthickness_in(4),
+  sphere(false)
 {
   DetMess = new DetectorConstructionMessenger(this);
   DefineMaterials();
@@ -44,6 +46,8 @@ void DetectorConstruction::DefineMaterials()
 
 void DetectorConstruction::SetHDPEthickness_in(G4double val)
 {HDPEthickness_in = val;}
+
+void DetectorConstruction::SetSphere(bool flag){ sphere = flag; }
 
 void DetectorConstruction::UpdateGeometry(){
     //Copying the SABREMC approach.
@@ -206,6 +210,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalVolume(PointyBit,             //its solid
                         PointyBit_mat,         //its material
                         "PointyBit");        //its name
+  G4Cons* PointyBit_sub = 
+    new G4Cons("PointyBit_sub", 0, FrontOuterRadius, 0, BackOuterRadius, PBDepth, startingangle, endingangle);
   // Rotation Matrix
   G4ThreeVector position12 = G4ThreeVector(-(CLYCdistance+0.88)*(sin(rotation_angle*deg))*cm,229.19*mm,((CLYCdistance+0.88)*(cos(rotation_angle*deg)))*cm);
   G4RotationMatrix rotm12  = G4RotationMatrix();
@@ -641,197 +647,221 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                     0,                       //copy number
                     fCheckOverlaps);         // checking overlaps 
 
+  if(!sphere){
+  	if(HDPEthickness_in>0){
+  	    ////// HDPE
+  	    //// Weird endy bit (WEB)
+  	    // Define Geometry
+  	    G4double WEB_radius = 3.99*cm;
+  	    G4double WEB_dZ = 0.15*cm; 
+  	
+  	    G4Tubs* WEB = 
+  	      new G4Tubs("WEB", 0.0, WEB_radius, WEB_dZ, 0., twopi);
+  	    G4LogicalVolume* logicWEB =                         
+  	      new G4LogicalVolume(WEB,             //its solid
+  	                          HDPE,         //its material
+  	                          "WEB");        //its name  
+  	    // Rotation Matrix
+  	    G4ThreeVector position27 = G4ThreeVector(-(HDPEdistance+0.15)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.15)*(cos(rotation_angle*deg)))*cm);
+  	    G4RotationMatrix rotm27 = G4RotationMatrix();
+  	    rotm27.rotateY((180-rotation_angle)*deg); 
+  	    rotm27.rotateX(0*deg); 
+  	    rotm27.rotateZ(0*deg); 
+  	    G4Transform3D transform27 = G4Transform3D(rotm27, position27);  
+  	    // Place on world
+  	    new G4PVPlacement(transform27,                       //no rotation
+  	                      logicWEB,               //its logical volume
+  	                      "WEB",                  //its name
+  	                      logicWorld,              //its mother  volume
+  	                      false,                   //no boolean operation
+  	                      0,                       //copy number
+  	                      fCheckOverlaps);         // checking overlaps 
+  	    //// Main cylinder of HDPE (MCOH)
+  	    // Define Geometry
+  	    G4double MCOH_radius = 3.12*cm;
+  	    G4double MCOH_dZ = ((HDPEthickness_in/2)*2.62-0.15);         //// Note: change 10.0 to the depth of the HDPE plug
+  	
+  	    G4Tubs* MCOH = 
+  	      new G4Tubs("MCOH", 0.0, MCOH_radius, MCOH_dZ*cm, 0., twopi);
+  	    G4LogicalVolume* logicMCOH =                         
+  	      new G4LogicalVolume(MCOH,             //its solid
+  	                          HDPE,         //its material
+  	                          "MCOH");        //its name  
+  	    // Rotation Matrix
+  	    G4ThreeVector position28 = G4ThreeVector(-(HDPEdistance+0.3+(MCOH_dZ))*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+(MCOH_dZ))*(cos(rotation_angle*deg)))*cm);
+  	    G4RotationMatrix rotm28 = G4RotationMatrix();
+  	    rotm28.rotateY((180-rotation_angle)*deg); 
+  	    rotm28.rotateX(0*deg); 
+  	    rotm28.rotateZ(0*deg); 
+  	    G4Transform3D transform28 = G4Transform3D(rotm28, position28);  
+  	    // Place on world
+  	    new G4PVPlacement(transform28,                       //no rotation
+  	                      logicMCOH,               //its logical volume
+  	                      "MCOH",                  //its name
+  	                      logicWorld,              //its mother  volume
+  	                      false,                   //no boolean operation
+  	                      0,                       //copy number
+  	                      fCheckOverlaps);         // checking overlaps 
 
-  if(HDPEthickness_in>0){
-      ////// HDPE
-      //// Weird endy bit (WEB)
-      // Define Geometry
-      G4double WEB_radius = 3.99*cm;
-      G4double WEB_dZ = 0.15*cm; 
-  
-      G4Tubs* WEB = 
-        new G4Tubs("WEB", 0.0, WEB_radius, WEB_dZ, 0., twopi);
-      G4LogicalVolume* logicWEB =                         
-        new G4LogicalVolume(WEB,             //its solid
-                            HDPE,         //its material
-                            "WEB");        //its name  
-      // Rotation Matrix
-      G4ThreeVector position27 = G4ThreeVector(-(HDPEdistance+0.15)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.15)*(cos(rotation_angle*deg)))*cm);
-      G4RotationMatrix rotm27 = G4RotationMatrix();
-      rotm27.rotateY((180-rotation_angle)*deg); 
-      rotm27.rotateX(0*deg); 
-      rotm27.rotateZ(0*deg); 
-      G4Transform3D transform27 = G4Transform3D(rotm27, position27);  
-      // Place on world
-      new G4PVPlacement(transform27,                       //no rotation
-                        logicWEB,               //its logical volume
-                        "WEB",                  //its name
-                        logicWorld,              //its mother  volume
-                        false,                   //no boolean operation
-                        0,                       //copy number
-                        fCheckOverlaps);         // checking overlaps 
-      //// Main cylinder of HDPE (MCOH)
-      // Define Geometry
-      G4double MCOH_radius = 3.12*cm;
-      G4double MCOH_dZ = ((HDPEthickness_in/2)*2.62-0.15);         //// Note: change 10.0 to the depth of the HDPE plug
-  
-      G4Tubs* MCOH = 
-        new G4Tubs("MCOH", 0.0, MCOH_radius, MCOH_dZ*cm, 0., twopi);
-      G4LogicalVolume* logicMCOH =                         
-        new G4LogicalVolume(MCOH,             //its solid
-                            HDPE,         //its material
-                            "MCOH");        //its name  
-      // Rotation Matrix
-      G4ThreeVector position28 = G4ThreeVector(-(HDPEdistance+0.3+(MCOH_dZ))*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+(MCOH_dZ))*(cos(rotation_angle*deg)))*cm);
-      G4RotationMatrix rotm28 = G4RotationMatrix();
-      rotm28.rotateY((180-rotation_angle)*deg); 
-      rotm28.rotateX(0*deg); 
-      rotm28.rotateZ(0*deg); 
-      G4Transform3D transform28 = G4Transform3D(rotm28, position28);  
-      // Place on world
-      new G4PVPlacement(transform28,                       //no rotation
-                        logicMCOH,               //its logical volume
-                        "MCOH",                  //its name
-                        logicWorld,              //its mother  volume
-                        false,                   //no boolean operation
-                        0,                       //copy number
-                        fCheckOverlaps);         // checking overlaps 
+  	}
 
+  	////// HDPE Holder
+  	//// Big Metal Pole HDPE (BMPH)
+  	// Geometry
+  	G4double BMPH_width = 1.0*cm;
+  	G4double BMPH_height = 9.7*cm;
+  	G4double BMPH_depth = 1.0*cm;
+  	G4Material* BMPH_mat = nist->FindOrBuildMaterial("G4_Al");
+  	G4Box* BMPH = new G4Box("BMPH", BMPH_width, BMPH_height, BMPH_depth);  
+  	G4LogicalVolume* logicBMPH =                         
+  	  new G4LogicalVolume(BMPH,             //its solid
+  	                      BMPH_mat,         //its material
+  	                      "BMPHLV");        //its name
+  	//// Main Black Bit HDPE (MBBH)
+  	// Define Geometry
+  	G4double MBBHO_radius = 3.42*cm;
+  	G4double MBBHI_radius = 3.12*cm;
+  	G4double MBBH_dZ = 1.03*cm;   
+  	G4Tubs* MBBH = 
+  	  new G4Tubs("MBBH", MBBHI_radius, MBBHO_radius, MBBH_dZ, 0., twopi);
+  	G4LogicalVolume* logicMBBH =                         
+  	  new G4LogicalVolume(MBBH,             //its solid
+  	                      HDPE,         //its material
+  	                      "MBBH");        //its name  
+  	// Rotation Matrix
+  	G4ThreeVector position30 = G4ThreeVector(-(HDPEdistance+0.3+1.03+.29*2)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+1.03+.29*2)*(cos(rotation_angle*deg)))*cm);
+  	G4RotationMatrix rotm30  = G4RotationMatrix();
+  	rotm30.rotateY((180-rotation_angle)*deg); 
+  	rotm30.rotateX(0*deg); 
+  	rotm30.rotateZ(0*deg); 
+  	G4Transform3D transform30 = G4Transform3D(rotm30, position30);  
+  	// Place on world
+  	new G4PVPlacement(transform30,                       //no rotation
+  	                  logicMBBH,               //its logical volume
+  	                  "MBBH",                  //its name
+  	                  logicWorld,              //its mother  volume
+  	                  false,                   //no boolean operation
+  	                  0,                       //copy number
+  	                  fCheckOverlaps);         // checking overlaps 
+  	//// Black overlap bit HDPE
+  	/// Front fallange for HDPE (FFFH)
+  	// Define Geometry
+  	G4double FFFHO_radius = 4.30*cm;             
+  	G4double FFFHI_radius = 3.42*cm;             
+  	G4double FFFH_dZ = .29*cm; 
+  	
+  	G4Tubs* FFFH = 
+  	  new G4Tubs("FFFH", FFFHI_radius, FFFHO_radius, FFFH_dZ, 0., twopi);
+  	G4LogicalVolume* logicFFFH =                         
+  	  new G4LogicalVolume(FFFH,             //its solid
+  	                      HDPE,         //its material
+  	                      "FFFH");        //its name  
+  	// Rotation Matrix
+  	G4ThreeVector position31 = G4ThreeVector(-(HDPEdistance+0.3+.29)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+.29)*(cos(rotation_angle*deg)))*cm);
+  	G4RotationMatrix rotm31 = G4RotationMatrix();
+  	rotm31.rotateY((180-rotation_angle)*deg); 
+  	rotm31.rotateX(0*deg); 
+  	rotm31.rotateZ(0*deg); 
+  	G4Transform3D transform31 = G4Transform3D(rotm31, position31);  
+  	// Place on world
+  	new G4PVPlacement(transform31,                       //no rotation
+  	                  logicFFFH,               //its logical volume
+  	                  "FFFH",                  //its name
+  	                  logicWorld,              //its mother  volume
+  	                  false,                   //no boolean operation
+  	                  0,                       //copy number
+  	                  fCheckOverlaps);         // checking overlaps 
+  	/// Back Fallange for HDPE (BFFH)
+  	// Define Geometry
+  	G4double BFFHO_radius = 4.30*cm;
+  	G4double BFFHI_radius = 3.42*cm;
+  	G4double BFFH_dZ = .29*cm; 
+  	
+  	G4Tubs* BFFH = 
+  	  new G4Tubs("BFFH", BFFHI_radius, BFFHO_radius, BFFH_dZ, 0., twopi);
+  	G4LogicalVolume* logicBFFH =                         
+  	  new G4LogicalVolume(BFFH,             //its solid
+  	                      HDPE,         //its material
+  	                      "BFFH");        //its name  
+  	// Rotation Matrix
+  	G4ThreeVector position32 = G4ThreeVector(-(HDPEdistance+0.3+1.03*2+.29*3)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+1.03*2+.29*3)*(cos(rotation_angle*deg)))*cm);
+  	G4RotationMatrix rotm32 = G4RotationMatrix();
+  	rotm32.rotateY((180-rotation_angle)*deg); 
+  	rotm32.rotateX(0*deg); 
+  	rotm32.rotateZ(0*deg); 
+  	G4Transform3D transform32 = G4Transform3D(rotm32, position32);  
+  	// Place on world
+  	new G4PVPlacement(transform32,                       //no rotation
+  	                  logicBFFH,               //its logical volume
+  	                  "BFFH",                  //its name
+  	                  logicWorld,              //its mother  volume
+  	                  false,                   //no boolean operation
+  	                  0,                       //copy number
+  	                  fCheckOverlaps);         // checking overlaps 
+  	//// Circular metal Bits HDPE (CMBH)
+  	// Define Geometry
+  	G4double CMBHO_radius = 4.11*cm;
+  	G4double CMBHI_radius = 3.42*cm;
+  	G4double CMBH_dZ = 1.0*cm; 
+  	
+  	G4Material* CMBH_mat = nist->FindOrBuildMaterial("G4_Al");
+  	G4Tubs* CMBH = 
+  	  new G4Tubs("CMBH", CMBHI_radius, CMBHO_radius, CMBH_dZ, 0., twopi);
+  	G4LogicalVolume* logicCMBH =                         
+  	  new G4LogicalVolume(CMBH,             //its solid
+  	                      CMBH_mat,         //its material
+  	                      "CMBH");        //its name  
+
+  	//// Make pole and circle into union solid
+  	// Rotation matrix
+  	G4ThreeVector positionMetalholderH = G4ThreeVector(-(HDPEdistance+0.3+1.03+.29*2)*(sin(rotation_angle*deg))*cm,9.7*cm,((HDPEdistance+0.3+1.03+.29*2)*(cos(rotation_angle*deg)))*cm);
+  	G4RotationMatrix rotmMetalholderH  = G4RotationMatrix();
+  	rotmMetalholderH.rotateY((180-rotation_angle)*deg); 
+  	rotmMetalholderH.rotateX(0*deg); 
+  	rotmMetalholderH.rotateZ(0*deg); 
+  	G4Transform3D transformMetalholderH = G4Transform3D(rotmMetalholderH, positionMetalholderH);  
+  	// Build Metal holder
+  	G4ThreeVector MetalholderHtrans = G4ThreeVector(0., 13.219*cm, 0.);
+  	G4RotationMatrix* MetalholderHRot = new G4RotationMatrix;
+  	  MetalholderHRot->rotateY(0.);
+  	G4UnionSolid* MetalholderH = 
+  	  new G4UnionSolid("MetalholderH", BMPH, CMBH, MetalholderHRot, MetalholderHtrans);
+  	G4LogicalVolume* logicMetalholderH =                         
+  	  new G4LogicalVolume(MetalholderH,             //its solid
+  	                      CMBH_mat,             //its material
+  	                      "MetalholderH");        //its name
+  	  new G4PVPlacement(transformMetalholderH,                     //no rotation
+  	                  logicMetalholderH,          //its logical volume
+  	                  "MetalholderH",             //its name
+  	                  logicWorld,              //its mother  volume
+  	                  false,                   //no boolean operation
+  	                  0,                       //copy number
+  	                  fCheckOverlaps);         // checking overlaps 
   }
+  else{
+	//sphere geometry.
+	//Make radius = HDPEthickness_in
+	G4Sphere* SimpleSphere = new G4Sphere("SimpleSphere", 0, 
+				HDPEthickness_in, 0, twopi, 0, twopi);
+	//Subtract solid pointy bit. Since the sphere is centred on the CLYC,
+	//this doesn't need any rotation/translation.
+	G4SubtractionSolid* BS_m_PB = 
+		new G4SubtractionSolid("BS_m_PB", SimpleSphere, PointyBit_sub);
+	//Subtract the CLYC tube. This needs to be translated by the length of
+	//the 'pointy bit' (PBDepth).
+	G4Tubs* SubCyl = new G4Tubs("SubCyl", 0, MBOCO_radius, 
+				HDPEthickness_in, 0, twopi);
+	G4SubtractionSolid* BonnerSphere =
+		new G4SubtractionSolid("BonnerSphere", BS_m_PB, SubCyl, 0,
+			G4ThreeVector(0, 0, -HDPEthickness_in - PBDepth*2));
 
-  ////// HDPE Holder
-  //// Big Metal Pole HDPE (BMPH)
-  // Geometry
-  G4double BMPH_width = 1.0*cm;
-  G4double BMPH_height = 9.7*cm;
-  G4double BMPH_depth = 1.0*cm;
-  G4Material* BMPH_mat = nist->FindOrBuildMaterial("G4_Al");
-  G4Box* BMPH = new G4Box("BMPH", BMPH_width, BMPH_height, BMPH_depth);  
-  G4LogicalVolume* logicBMPH =                         
-    new G4LogicalVolume(BMPH,             //its solid
-                        BMPH_mat,         //its material
-                        "BMPHLV");        //its name
-  //// Main Black Bit HDPE (MBBH)
-  // Define Geometry
-  G4double MBBHO_radius = 3.42*cm;
-  G4double MBBHI_radius = 3.12*cm;
-  G4double MBBH_dZ = 1.03*cm;   
-  G4Tubs* MBBH = 
-    new G4Tubs("MBBH", MBBHI_radius, MBBHO_radius, MBBH_dZ, 0., twopi);
-  G4LogicalVolume* logicMBBH =                         
-    new G4LogicalVolume(MBBH,             //its solid
-                        HDPE,         //its material
-                        "MBBH");        //its name  
-  // Rotation Matrix
-  G4ThreeVector position30 = G4ThreeVector(-(HDPEdistance+0.3+1.03+.29*2)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+1.03+.29*2)*(cos(rotation_angle*deg)))*cm);
-  G4RotationMatrix rotm30  = G4RotationMatrix();
-  rotm30.rotateY((180-rotation_angle)*deg); 
-  rotm30.rotateX(0*deg); 
-  rotm30.rotateZ(0*deg); 
-  G4Transform3D transform30 = G4Transform3D(rotm30, position30);  
-  // Place on world
-  new G4PVPlacement(transform30,                       //no rotation
-                    logicMBBH,               //its logical volume
-                    "MBBH",                  //its name
-                    logicWorld,              //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    fCheckOverlaps);         // checking overlaps 
-  //// Black overlap bit HDPE
-  /// Front fallange for HDPE (FFFH)
-  // Define Geometry
-  G4double FFFHO_radius = 4.30*cm;             
-  G4double FFFHI_radius = 3.42*cm;             
-  G4double FFFH_dZ = .29*cm; 
-  
-  G4Tubs* FFFH = 
-    new G4Tubs("FFFH", FFFHI_radius, FFFHO_radius, FFFH_dZ, 0., twopi);
-  G4LogicalVolume* logicFFFH =                         
-    new G4LogicalVolume(FFFH,             //its solid
-                        HDPE,         //its material
-                        "FFFH");        //its name  
-  // Rotation Matrix
-  G4ThreeVector position31 = G4ThreeVector(-(HDPEdistance+0.3+.29)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+.29)*(cos(rotation_angle*deg)))*cm);
-  G4RotationMatrix rotm31 = G4RotationMatrix();
-  rotm31.rotateY((180-rotation_angle)*deg); 
-  rotm31.rotateX(0*deg); 
-  rotm31.rotateZ(0*deg); 
-  G4Transform3D transform31 = G4Transform3D(rotm31, position31);  
-  // Place on world
-  new G4PVPlacement(transform31,                       //no rotation
-                    logicFFFH,               //its logical volume
-                    "FFFH",                  //its name
-                    logicWorld,              //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    fCheckOverlaps);         // checking overlaps 
-  /// Back Fallange for HDPE (BFFH)
-  // Define Geometry
-  G4double BFFHO_radius = 4.30*cm;
-  G4double BFFHI_radius = 3.42*cm;
-  G4double BFFH_dZ = .29*cm; 
-  
-  G4Tubs* BFFH = 
-    new G4Tubs("BFFH", BFFHI_radius, BFFHO_radius, BFFH_dZ, 0., twopi);
-  G4LogicalVolume* logicBFFH =                         
-    new G4LogicalVolume(BFFH,             //its solid
-                        HDPE,         //its material
-                        "BFFH");        //its name  
-  // Rotation Matrix
-  G4ThreeVector position32 = G4ThreeVector(-(HDPEdistance+0.3+1.03*2+.29*3)*(sin(rotation_angle*deg))*cm,229.19*mm,((HDPEdistance+0.3+1.03*2+.29*3)*(cos(rotation_angle*deg)))*cm);
-  G4RotationMatrix rotm32 = G4RotationMatrix();
-  rotm32.rotateY((180-rotation_angle)*deg); 
-  rotm32.rotateX(0*deg); 
-  rotm32.rotateZ(0*deg); 
-  G4Transform3D transform32 = G4Transform3D(rotm32, position32);  
-  // Place on world
-  new G4PVPlacement(transform32,                       //no rotation
-                    logicBFFH,               //its logical volume
-                    "BFFH",                  //its name
-                    logicWorld,              //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    fCheckOverlaps);         // checking overlaps 
-  //// Circular metal Bits HDPE (CMBH)
-  // Define Geometry
-  G4double CMBHO_radius = 4.11*cm;
-  G4double CMBHI_radius = 3.42*cm;
-  G4double CMBH_dZ = 1.0*cm; 
-  
-  G4Material* CMBH_mat = nist->FindOrBuildMaterial("G4_Al");
-  G4Tubs* CMBH = 
-    new G4Tubs("CMBH", CMBHI_radius, CMBHO_radius, CMBH_dZ, 0., twopi);
-  G4LogicalVolume* logicCMBH =                         
-    new G4LogicalVolume(CMBH,             //its solid
-                        CMBH_mat,         //its material
-                        "CMBH");        //its name  
+	G4LogicalVolume* logicBonner = 
+		new G4LogicalVolume(BonnerSphere, HDPE, "Bonner_log");
 
-  //// Make pole and circle into union solid
-  // Rotation matrix
-  G4ThreeVector positionMetalholderH = G4ThreeVector(-(HDPEdistance+0.3+1.03+.29*2)*(sin(rotation_angle*deg))*cm,9.7*cm,((HDPEdistance+0.3+1.03+.29*2)*(cos(rotation_angle*deg)))*cm);
-  G4RotationMatrix rotmMetalholderH  = G4RotationMatrix();
-  rotmMetalholderH.rotateY((180-rotation_angle)*deg); 
-  rotmMetalholderH.rotateX(0*deg); 
-  rotmMetalholderH.rotateZ(0*deg); 
-  G4Transform3D transformMetalholderH = G4Transform3D(rotmMetalholderH, positionMetalholderH);  
-  // Build Metal holder
-  G4ThreeVector MetalholderHtrans = G4ThreeVector(0., 13.219*cm, 0.);
-  G4RotationMatrix* MetalholderHRot = new G4RotationMatrix;
-    MetalholderHRot->rotateY(0.);
-  G4UnionSolid* MetalholderH = 
-    new G4UnionSolid("MetalholderH", BMPH, CMBH, MetalholderHRot, MetalholderHtrans);
-  G4LogicalVolume* logicMetalholderH =                         
-    new G4LogicalVolume(MetalholderH,             //its solid
-                        CMBH_mat,             //its material
-                        "MetalholderH");        //its name
-    new G4PVPlacement(transformMetalholderH,                     //no rotation
-                    logicMetalholderH,          //its logical volume
-                    "MetalholderH",             //its name
-                    logicWorld,              //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    fCheckOverlaps);         // checking overlaps 
-
+	new G4PVPlacement(transform12, logicBonner, "Bonner_phys", logicWorld,
+			false, 0, fCheckOverlaps);
+		
+  }
 
   // Building the target chamber
   //// wholepipe
@@ -847,7 +877,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                         wholepipe_mat,         //its material
                         "wholepipe");        //its name
 
-
+  /*
   //// Putting on table (table)
   // Geometry
   G4double table_width = 70.0*cm;
@@ -876,7 +906,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                     false,                   //no boolean operation
                     0,                       //copy number
                     fCheckOverlaps);         // checking overlaps 
-
+  */
 
   // Print materials
   G4cout << *(G4Material::GetMaterialTable()) << G4endl; 
